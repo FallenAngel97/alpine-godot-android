@@ -59,6 +59,8 @@ RUN yes | sdkmanager --licenses \
 RUN keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 \
     && mv debug.keystore /root/debug.keystore
 
+RUN upx $(find /usr/lib/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/)
+
 RUN godot -v -e --quit --headless ${GODOT_TEST_ARGS}
 RUN rm -rf /root/.local/share/godot/export_templates/**/android_source.zip \
    /root/.local/share/godot/export_templates/**/ios.zip \
@@ -87,7 +89,7 @@ RUN echo 'export/android/force_system_user = false' >> ~/.config/godot/editor_se
 RUN echo 'export/android/timestamping_authority_url = ""' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 RUN echo 'export/android/shutdown_adb_on_exit = true' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 
-FROM alpine as preprod
+FROM alpine/java:17-jdk AS preprod
 COPY --from=base /usr/bin/godot /usr/bin/godot
 COPY --from=base /usr/lib/android-sdk /usr/lib/android-sdk
 COPY --from=base /root/debug.keystore /root/debug.keystore
@@ -96,4 +98,8 @@ COPY --from=base /root/.local /root/.local
 COPY --from=base /root/.android /root/.android
 RUN apk add eudev-dev curl --no-cache
 FROM scratch
+ENV JAVA_VERSION=jdk-17.0.12+7
+ENV PATH=/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV JAVA_HOME=/opt/java/openjdk
+ENV JRE_CACERTS_PATH=/opt/java/openjdk/lib/security/cacerts
 COPY --from=preprod / /
