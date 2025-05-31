@@ -1,4 +1,4 @@
-FROM openjdk:17-alpine AS base
+FROM alpine/java:17-jdk AS base
 USER root
 
 # When in doubt, see the downloads page: https://github.com/godotengine/godot-builds/releases/
@@ -16,27 +16,27 @@ ARG SUBDIR=""
 ARG GODOT_TEST_ARGS=""
 ARG GODOT_PLATFORM="linux.x86_64"
 
-RUN wget https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${RELEASE_NAME}/Godot_v${GODOT_VERSION}-${RELEASE_NAME}_${GODOT_PLATFORM}.zip \
-    && wget https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${RELEASE_NAME}/Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz \
-    && mkdir -p ~/.cache \
-    && mkdir -p ~/.config/godot \
-    && mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.${RELEASE_NAME} \
-    && unzip Godot_v${GODOT_VERSION}-${RELEASE_NAME}_${GODOT_PLATFORM}.zip \
-    && mv Godot_v${GODOT_VERSION}-${RELEASE_NAME}_${GODOT_PLATFORM} /usr/local/bin/godot \
-    && unzip Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz \
-    && mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.${RELEASE_NAME} \
-    && rm -f Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz Godot_v${GODOT_VERSION}-${RELEASE_NAME}_${GODOT_PLATFORM}.zip
+RUN apk add \
+  scons \
+  pkgconf \
+  gcc \
+  g++ \
+  libx11-dev \
+  libxcursor-dev \
+  libxinerama-dev \
+  libxi-dev \
+  libxrandr-dev \
+  mesa-dev \
+  eudev-dev \
+  alsa-lib-dev \
+  pulseaudio-dev \
+  git \
+  gcompat \
+  upx --no-cache
 
-ENV GLIBC_REPO=https://github.com/sgerrand/alpine-pkg-glibc
-ENV GLIBC_VERSION=2.30-r0
+RUN git clone --depth 1 https://github.com/godotengine/godot.git -b $GODOT_VERSION-$RELEASE_NAME && \
+    cd godot && scons platform=linuxbsd target=editor && strip bin/godot* && upx bin/godot* && mv bin/godot* /usr/bin/godot && rm -rf godot 
 
-RUN set -ex && \
-    apk --update add libstdc++ curl ca-certificates && \
-    for pkg in glibc-${GLIBC_VERSION} glibc-bin-${GLIBC_VERSION}; \
-        do curl -sSL ${GLIBC_REPO}/releases/download/${GLIBC_VERSION}/${pkg}.apk -o /tmp/${pkg}.apk; done && \
-    apk add --allow-untrusted /tmp/*.apk && \
-    rm -v /tmp/*.apk && \
-    /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib
 
 # Download and set up Android SDK to export to Android.
 ENV ANDROID_HOME="/usr/lib/android-sdk"
@@ -61,12 +61,14 @@ RUN rm -rf /root/.local/share/godot/export_templates/**/android_source.zip \
    /root/.local/share/godot/export_templates/**/windows_* \
    /root/.local/share/godot/export_templates/**/web*.zip \
    /root/.local/share/godot/export_templates/**/macos.zip \
-   /root/.local/share/godot/export_templates/**/linux* \
-   /usr/lib/android-sdk/**/LICENSE* \
-   /usr/lib/android-sdk/**/NOTICE* \
-   /usr/lib/android-sdk/**/README* \
-   /usr/lib/android-sdk/**/Copyright* \
-   /usr/lib/android-sdk/**/COPYRIGHT* 
+   /root/.local/share/godot/export_templates/**/linux*
+RUN find . \( -type f \
+   -name "LICENSE*" \
+   -o -name "NOTICE*" \
+   -o -name "README*" \
+   -o -name "Copyright*" \
+   -o -name "COPYRIGHT*" \) \
+   -exec rm -v {} \; 
 # Godot editor settings are stored per minor version since 4.3.
 # `${GODOT_VERSION:0:3}` transforms a string of the form `x.y.z` into `x.y`, even if it's already `x.y` (until Godot 4.9).
 RUN echo '[gd_resource type="EditorSettings" format=3]' > ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
@@ -80,5 +82,13 @@ RUN echo 'export/android/force_system_user = false' >> ~/.config/godot/editor_se
 RUN echo 'export/android/timestamping_authority_url = ""' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 RUN echo 'export/android/shutdown_adb_on_exit = true' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 
+FROM alpine as preprod
+COPY --from=base /usr/bin/godot /usr/bin/godot
+COPY --from=base /usr/lib/android-sdk /usr/lib/android-sdk
+COPY --from=base /root/debug.keystore /root/debug.keystore
+COPY --from=base /root/.config /root/.config
+COPY --from=base /root/.local /root/.local
+COPY --from=base /root/.android /root/.android
+RUN apk add eudev-dev --no-cache
 FROM scratch
-COPY --from=base / /
+COPY --from=preprod / /
