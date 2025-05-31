@@ -59,7 +59,7 @@ RUN yes | sdkmanager --licenses \
 RUN keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 \
     && mv debug.keystore /root/debug.keystore
 
-RUN upx $(find /usr/lib/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/)
+RUN upx $(find /usr/lib/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/) || true
 
 RUN godot -v -e --quit --headless ${GODOT_TEST_ARGS}
 RUN rm -rf /root/.local/share/godot/export_templates/**/android_source.zip \
