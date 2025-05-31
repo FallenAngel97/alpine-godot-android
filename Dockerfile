@@ -41,10 +41,14 @@ RUN git clone --depth 1 https://github.com/godotengine/godot.git -b $GODOT_VERSI
 # Download and set up Android SDK to export to Android.
 ENV ANDROID_HOME="/usr/lib/android-sdk"
 RUN wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip \
+    && wget https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${RELEASE_NAME}/Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz \
+    && unzip Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz \
+    && mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.${RELEASE_NAME} \
+    && mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.${RELEASE_NAME} \
     && unzip commandlinetools-linux-*_latest.zip \
     && mkdir -p $ANDROID_HOME/cmdline-tools/tools \
     && mv cmdline-tools/* $ANDROID_HOME/cmdline-tools/tools/ \
-    && rm -rf commandlinetools-linux-*_latest.zip cmdline-tools
+    && rm -rf commandlinetools-linux-*_latest.zip cmdline-tools Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz
 
 ENV PATH="${ANDROID_HOME}/cmdline-tools/tools/bin:${PATH}"
 
@@ -89,6 +93,6 @@ COPY --from=base /root/debug.keystore /root/debug.keystore
 COPY --from=base /root/.config /root/.config
 COPY --from=base /root/.local /root/.local
 COPY --from=base /root/.android /root/.android
-RUN apk add eudev-dev --no-cache
+RUN apk add eudev-dev curl --no-cache
 FROM scratch
 COPY --from=preprod / /
