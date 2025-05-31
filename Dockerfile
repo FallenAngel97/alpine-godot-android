@@ -43,8 +43,8 @@ ENV ANDROID_HOME="/usr/lib/android-sdk"
 RUN wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip \
     && wget https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${RELEASE_NAME}/Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz \
     && unzip Godot_v${GODOT_VERSION}-${RELEASE_NAME}_export_templates.tpz \
-    && mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.${RELEASE_NAME} \
     && mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.${RELEASE_NAME} \
+    && mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.${RELEASE_NAME} \
     && unzip commandlinetools-linux-*_latest.zip \
     && mkdir -p $ANDROID_HOME/cmdline-tools/tools \
     && mv cmdline-tools/* $ANDROID_HOME/cmdline-tools/tools/ \
@@ -66,6 +66,7 @@ RUN rm -rf /root/.local/share/godot/export_templates/**/android_source.zip \
    /root/.local/share/godot/export_templates/**/web*.zip \
    /root/.local/share/godot/export_templates/**/macos.zip \
    /root/.local/share/godot/export_templates/**/linux*
+
 RUN find . \( -type f \
    -name "LICENSE*" \
    -o -name "NOTICE*" \
