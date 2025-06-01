@@ -101,5 +101,6 @@ FROM scratch
 ENV JAVA_VERSION=jdk-17.0.12+7
 ENV PATH=/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ENV JAVA_HOME=/opt/java/openjdk
+ENV ANDROID_HOME=/usr/lib/android-sdk
 ENV JRE_CACERTS_PATH=/opt/java/openjdk/lib/security/cacerts
 COPY --from=preprod / /
