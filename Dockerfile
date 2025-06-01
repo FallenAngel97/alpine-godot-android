@@ -96,7 +96,7 @@ COPY --from=base /root/debug.keystore /root/debug.keystore
 COPY --from=base /root/.config /root/.config
 COPY --from=base /root/.local /root/.local
 COPY --from=base /root/.android /root/.android
-RUN apk add eudev-dev curl --no-cache
+RUN apk add eudev-dev gcompat curl --no-cache
 FROM scratch
 ENV JAVA_VERSION=jdk-17.0.12+7
 ENV PATH=/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
