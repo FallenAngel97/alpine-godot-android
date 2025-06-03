@@ -2,7 +2,7 @@ FROM alpine/java:17-jdk AS base
 USER root
 
 # When in doubt, see the downloads page: https://github.com/godotengine/godot-builds/releases/
-ARG GODOT_VERSION="4.4"
+ARG GODOT_VERSION="4.4.1"
 
 # Example values: stable, beta3, rc1, dev2, etc.
 # Also change the `SUBDIR` argument below when NOT using stable.
