@@ -1,8 +1,6 @@
-FROM alpine/java:17-jdk AS base
-USER root
+FROM azul/zulu-openjdk-alpine:25.0.0-25.28 AS base
 
-# When in doubt, see the downloads page: https://github.com/godotengine/godot-builds/releases/
-ARG GODOT_VERSION="4.4.1"
+ENV GODOT_VERSION=4.5
 
 # Example values: stable, beta3, rc1, dev2, etc.
 # Also change the `SUBDIR` argument below when NOT using stable.
@@ -19,8 +17,7 @@ ARG GODOT_PLATFORM="linux.x86_64"
 RUN apk add \
   scons \
   pkgconf \
-  gcc \
-  g++ \
+  clang \
   libx11-dev \
   libxcursor-dev \
   libxinerama-dev \
@@ -31,12 +28,29 @@ RUN apk add \
   alsa-lib-dev \
   pulseaudio-dev \
   git \
-  gcompat \
-  upx --no-cache
+  gcompat
 
 RUN git clone --depth 1 https://github.com/godotengine/godot.git -b $GODOT_VERSION-$RELEASE_NAME && \
-    cd godot && scons platform=linuxbsd target=editor && strip bin/godot* && upx bin/godot* && mv bin/godot* /usr/bin/godot && rm -rf godot 
-
+    cd godot && \
+    scons platform=linuxbsd \
+    target=editor \
+    tools=no \
+    module_3d_enabled=no \
+    module_bullet_enabled=no \
+    module_openssl_enabled=no \
+    module_theora_enabled=no \
+    module_webm_enabled=no \
+    module_vorbis_enabled=yes \
+    use_lto=yes \
+    use_static_cpp=yes \
+    CC=clang \
+    CXX=clang++ \
+    CPPDEFINES=["DISABLE_3D"] \
+    LINKFLAGS="-Wl,--gc-sections -Wl,-O1 -s -flto" \
+    CFLAGS="-Os -pipe -fomit-frame-pointer -fdata-sections -ffunction-sections" \
+    CXXFLAGS="-Os -pipe -fomit-frame-pointer -fdata-sections -ffunction-sections" \
+    -j1 \
+    && strip bin/godot* && mv bin/godot* /usr/bin/godot && rm -rf godot 
 
 # Download and set up Android SDK to export to Android.
 ENV ANDROID_HOME="/usr/lib/android-sdk"
@@ -53,13 +67,11 @@ RUN wget https://dl.google.com/android/repository/commandlinetools-linux-7583922
 ENV PATH="${ANDROID_HOME}/cmdline-tools/tools/bin:${PATH}"
 
 RUN yes | sdkmanager --licenses \
-    && sdkmanager "platform-tools" "build-tools;33.0.2" "platforms;android-33" "cmdline-tools;latest" "cmake;3.22.1" "ndk;25.2.9519653"
+    && sdkmanager "platform-tools" "build-tools;33.0.2" "platforms;android-33" "cmdline-tools;latest" "cmake;3.22.1" "ndk;29.0.14033849"
 
 # Add Android keystore and settings.
 RUN keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 \
     && mv debug.keystore /root/debug.keystore
-
-RUN upx $(find /usr/lib/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/) || true
 
 RUN godot -v -e --quit --headless ${GODOT_TEST_ARGS}
 RUN rm -rf /root/.local/share/godot/export_templates/**/android_source.zip \
@@ -80,7 +92,7 @@ RUN find . \( -type f \
 # `${GODOT_VERSION:0:3}` transforms a string of the form `x.y.z` into `x.y`, even if it's already `x.y` (until Godot 4.9).
 RUN echo '[gd_resource type="EditorSettings" format=3]' > ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 RUN echo '[resource]' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
-RUN echo 'export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
+RUN echo 'export/android/java_sdk_path = "/usr/lib/jvm/zulu25-ca"' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 RUN echo 'export/android/android_sdk_path = "/usr/lib/android-sdk"' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 RUN echo 'export/android/debug_keystore = "/root/debug.keystore"' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 RUN echo 'export/android/debug_keystore_user = "androiddebugkey"' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
@@ -89,18 +101,22 @@ RUN echo 'export/android/force_system_user = false' >> ~/.config/godot/editor_se
 RUN echo 'export/android/timestamping_authority_url = ""' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 RUN echo 'export/android/shutdown_adb_on_exit = true' >> ~/.config/godot/editor_settings-${GODOT_VERSION:0:3}.tres
 
-FROM alpine/java:17-jdk AS preprod
+FROM azul/zulu-openjdk-alpine:25.0.0-25.28 AS preprod
 COPY --from=base /usr/bin/godot /usr/bin/godot
 COPY --from=base /usr/lib/android-sdk /usr/lib/android-sdk
 COPY --from=base /root/debug.keystore /root/debug.keystore
 COPY --from=base /root/.config /root/.config
 COPY --from=base /root/.local /root/.local
 COPY --from=base /root/.android /root/.android
-RUN apk add eudev-dev gcompat curl --no-cache
+RUN mkdir -p /root/.gradle && echo '\
+org.gradle.caching=true\n\
+org.gradle.parallel=false\n\
+org.gradle.daemon=false\n\
+org.gradle.jvmargs=-Xmx512m -XX:+UseSerialGC\n' \
+> /root/.gradle/gradle.properties
+RUN apk add eudev-dev gcompat curl fontconfig --no-cache
 FROM scratch
-ENV JAVA_VERSION=jdk-17.0.12+7
-ENV PATH=/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV JAVA_HOME=/usr/lib/jvm/zulu25
 ENV ANDROID_HOME=/usr/lib/android-sdk
-ENV JRE_CACERTS_PATH=/opt/java/openjdk/lib/security/cacerts
 COPY --from=preprod / /
