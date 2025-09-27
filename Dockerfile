@@ -79,11 +79,28 @@ RUN rm -rf /root/.local/share/godot/export_templates/**/android_source.zip \
    /root/.local/share/godot/export_templates/**/windows_* \
    /root/.local/share/godot/export_templates/**/web*.zip \
    /root/.local/share/godot/export_templates/**/macos.zip \
-   /root/.local/share/godot/export_templates/**/linux*
+   /root/.local/share/godot/export_templates/**/linux* \
+   /usr/lib/android-sdk/ndk/29.0.14033849/sources \
+   /usr/lib/android-sdk/ndk/29.0.14033849/toolchains/llvm/prebuilt/linux-x86_64/python3 \
+   /usr/lib/android-sdk/ndk/29.0.14033849/toolchains/llvm/prebuilt/linux-x86_64/lib/x86_64-unknown-linux-gnu \
+   /usr/lib/android-sdk/ndk/29.0.14033849/toolchains/llvm/prebuilt/linux-x86_64/lib/x86_64-w64-windows-gnu \
+   /usr/lib/android-sdk/ndk/29.0.14033849/toolchains/llvm/prebuilt/linux-x86_64/lib/i686-w64-windows-gnu \
+   /usr/lib/android-sdk/ndk/29.0.14033849/toolchains/llvm/prebuilt/linux-x86_64/lib/python3.11 \
+   /usr/lib/android-sdk/ndk/29.0.14033849/toolchains/llvm/prebuilt/linux-x86_64/lib/python3 \
+   /usr/lib/android-sdk/platforms/android-33/data \
+   /usr/lib/android-sdk/platforms/android-33/skins \
+   /usr/lib/android-sdk/platforms/android-33/templates \
+   /usr/lib/android-sdk/platforms/android-33/optional \
+   /usr/lib/android-sdk/platforms/android-33/uiautomator.jar \
+   /usr/lib/android-sdk/platforms/android-33/android-stubs-src.jar \
+   /usr/lib/android-sdk/platforms/android-33/core-for-system-modules.jar \
+   /usr/lib/android-sdk/platforms/android-33/build.prop \
+   /usr/lib/android-sdk/platforms/android-33/build.prop \
 
 RUN find . \( -type f \
    -name "LICENSE*" \
    -o -name "NOTICE*" \
+   -o -name "CHANGELOG*" \
    -o -name "README*" \
    -o -name "Copyright*" \
    -o -name "COPYRIGHT*" \) \
