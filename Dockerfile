@@ -94,8 +94,7 @@ RUN rm -rf /root/.local/share/godot/export_templates/**/android_source.zip \
    /usr/lib/android-sdk/platforms/android-33/uiautomator.jar \
    /usr/lib/android-sdk/platforms/android-33/android-stubs-src.jar \
    /usr/lib/android-sdk/platforms/android-33/core-for-system-modules.jar \
-   /usr/lib/android-sdk/platforms/android-33/build.prop \
-   /usr/lib/android-sdk/platforms/android-33/build.prop \
+   /usr/lib/android-sdk/platforms/android-33/build.prop 
 
 RUN find . \( -type f \
    -name "LICENSE*" \
